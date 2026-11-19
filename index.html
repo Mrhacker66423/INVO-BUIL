@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INVO BUILD – SRB / PRA / GST Invoices</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+*{box-sizing:border-box}:root{--bg:#f1f4f8;--tx:#1b2333;--cd:#fff;--bd:#dfe5ee;--bd2:#cfd7e3;--mu:#64708a;--in:#fff;--g:#e8edf4;--on:#e6f4f1;color-scheme:light}
+[data-theme=dark]{--bg:#0f1720;--tx:#e6ebf2;--cd:#18222e;--bd:#2a3645;--bd2:#37455a;--mu:#8fa0b6;--in:#101a25;--g:#263344;--on:#14342f;color-scheme:dark}
+[data-theme=dark] .tag,[data-theme=dark] .seg button.on{color:#5fd1bd}[data-theme=dark] .seg button.on{border-color:#5fd1bd}
+#th{background:none;border:0;font-size:18px;cursor:pointer;color:#fff}
+body{margin:0;font:14px/1.4 system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:#0b3d4f;color:#fff;display:flex;align-items:center;gap:8px;padding:0 16px;height:52px;position:sticky;top:0;z-index:5}
+header b{font-size:17px}nav button{background:none;border:0;color:#b9d3dc;padding:8px 14px;border-radius:8px;font:inherit;cursor:pointer}nav button.on{background:#14677f;color:#fff}
+main{max-width:1300px;margin:16px auto;padding:0 12px}.card{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 540px;gap:14px;align-items:start}@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--bd2);border-radius:8px;font:inherit;background:var(--in);color:var(--tx)}
+.r{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.btn{background:#0b6b5d;color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer}.btn.g{background:var(--g);color:var(--tx)}.btn.d{background:#c0392b}.btn.s{padding:4px 9px;font-size:12px}
+.seg{display:flex;gap:8px}.seg button{flex:1;padding:12px;border:2px solid var(--bd2);background:var(--cd);color:var(--tx);border-radius:10px;font:inherit;font-weight:700;cursor:pointer}.seg button.on{border-color:#0b6b5d;background:var(--on);color:#0b6b5d}
+.ir input{padding:8px 6px;min-width:0}.ir input[type=number]{-moz-appearance:textfield;appearance:textfield}.ir input::-webkit-inner-spin-button,.ir input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.ir{display:grid;grid-template-columns:62px 1fr 112px 104px 34px;gap:6px;margin-bottom:6px}
+table.l{width:100%;border-collapse:collapse}.l th,.l td{padding:8px;border-bottom:1px solid var(--bd);text-align:left;font-size:13px;white-space:nowrap}.l td:nth-child(n+6):nth-child(-n+8){text-align:right}
+.tag{padding:2px 8px;border-radius:99px;background:var(--on);color:#0b6b5d;font-weight:700;font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tot{margin-top:10px;padding:10px;background:var(--on);border-radius:8px}
+.pvw{zoom:.7;overflow:auto;background:#fff}#lock{position:fixed;inset:0;background:#0b3d4fee;color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:20;text-align:center;padding:20px}
+#lock[hidden]{display:none}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1b2333;color:#fff;padding:10px 18px;border-radius:10px;opacity:0;transition:.3s;pointer-events:none;z-index:30}#toast.on{opacity:1}
+section[hidden]{display:none}#auth{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:25}#auth[hidden]{display:none}
+/* ===== Invoice (A4) ===== */
+.inv{width:190mm;margin:0 auto;font:11pt Calibri,Carlito,Arial,sans-serif;color:#000;background:#fff;page-break-after:always}
+.inv table{width:100%;border-collapse:collapse;table-layout:fixed}.inv td{border:1px solid #000;padding:2px 4px;height:20px;overflow-wrap:anywhere;vertical-align:middle}
+.inv .b td{font-weight:700}.inv .c td,.inv td.c{text-align:center}.inv td.n{text-align:right}.inv td.t{font:700 20pt "Times New Roman",serif;text-align:center;height:36px}
+#pa{display:none}
+@media print{@page{size:A4;margin:10mm}body{background:none}body>*:not(#pa){display:none!important}#pa{display:block}.inv:last-child{page-break-after:auto}}
+</style></head><body>
+<header><b>🧾 INVO BUILD</b><nav style="margin-left:auto"><button data-v=new class=on>Nayi Invoice</button><button data-v=rec>Purana Record</button><button data-v=set>Settings</button></nav><button id=th title="Light / Dark"></button></header>
+<main>
+<section id=v-new><div class=grid><div>
+ <div class=card><label>Kaunsi invoice banani hai?</label><div class=seg id=seg></div>
+  <div class=r><div><label>Invoice number</label><input id=no></div><div><label>Tareekh</label><input id=dt type=date></div><div><label>Copy ka naam (invoice par chhapega)</label><select id=cp><option>ORIGINAL/DUPLICATE<option>ORIGINAL<option>DUPLICATE</select></div></div></div>
+ <div class=card><b>Khareedar (Buyer) ki details</b><label>Khareedar ka naam</label><input id=bn list=bl placeholder="M/S ..."><datalist id=bl></datalist><label>Pata</label><textarea id=ba rows=2></textarea><label>NTN number</label><input id=bt></div>
+ <div class=card><b>Maal / Service ki tafseel</b> <small style="color:var(--mu)">(jitni lines chahiye add karein, zyada hon to invoice agle page par chali jayegi)</small><div id=its style="margin-top:8px"></div><button class="btn g s" id=add>+ Nayi line</button><div class=tot id=tot></div><datalist id=rl><option>0<option>5<option>8<option>10<option>12<option>13<option>14<option>15<option>16<option>17<option>18<option>20</datalist></div>
+ <div class=bar><button class=btn id=save>💾 Invoice save karein</button><button class="btn g" id=xl1>⬇ Excel download</button><button class="btn g" id=pr1>🖨 PDF / Print karein</button><button class="btn g" id=new>Nayi invoice</button></div>
+</div><div class=card><b>Invoice kuch aisi nazar aayegi (A4)</b><div class=pvw id=pv></div></div></div></section>
+
+<section id=v-rec hidden><div class=card><div class=r>
+ <div><label>Talash</label><input id=fq placeholder="naam, number ya NTN likhein"></div><div><label>Qisam</label><select id=ft><option value="">Sab<option>SRB<option>PRA<option>GST</select></div>
+ <div><label>Mahina</label><input id=fm type=month></div><div><label>Saal</label><input id=fy type=number placeholder="2026"></div><div><label>Se (tareekh)</label><input id=fa type=date></div><div><label>Tak (tareekh)</label><input id=fb type=date></div></div>
+ <div class=bar style="margin-top:12px"><button class="btn g s" id=fx>Filter hatayen</button><span id=sum style="margin-right:auto"></span><button class=btn id=xl2 title="Tick lagayen to sirf wohi, warna list ki sari invoices">⬇ Excel download</button><button class=btn id=pr2 title="Tick lagayen to sirf wohi, warna list ki sari invoices">🖨 PDF download</button></div></div>
+ <div class=card style="overflow:auto"><table class=l><thead><tr><th><input type=checkbox id=ca></th><th>Qisam<th>Number<th>Tareekh<th>Khareedar<th>Raqam<th>Tax<th>Kul<th></th></tr></thead><tbody id=rb></tbody></table></div></section>
+
+<section id=v-set hidden><div class=card style="max-width:700px"><b>Aapke karobar ki details (invoice par chhapti hain)</b>
+ <label>Karobar ka naam</label><input id=sn><label>Pata</label><textarea id=sa rows=2></textarea><label>NTN number</label><input id=st>
+ <b style="display:block;margin-top:16px">Tax ka aam rate (%)</b><div class=r><div><label>SRB</label><input id=rS type=number step=any></div><div><label>PRA</label><input id=rP type=number step=any></div><div><label>GST</label><input id=rG type=number step=any></div></div>
+ <div id=lic><b style="display:block;margin-top:16px">Mera account</b><div id=who style="margin:6px 0 10px;color:var(--mu)"></div><button class="btn d s" id=lo>Logout</button></div>
+ <div class=bar style="margin-top:14px"><button class=btn id=ss>Settings save karein</button></div></div></section>
+</main>
+<div id=pa></div><div id=lock hidden><h2 style="margin:0">🔒 Access band hai</h2><div id=lm></div><button class=btn onclick="logout()">Dobara login karein</button></div><div id=auth hidden><div class=card style="width:min(400px,92vw);margin:0"><b style="font-size:20px">🧾 INVO BUILD</b>
+<div class=seg id=aseg style="margin:12px 0"><button data-m=login class=on>Login</button><button data-m=signup>Naya account</button></div>
+<div id=anw hidden><label>Aapka naam</label><input id=an></div><label>Email</label><input id=ae type=email autocomplete=username><label>Password</label><input id=ap type=password autocomplete=current-password>
+<div id=am style="margin:10px 0;min-height:18px;font-size:13px"></div><button class=btn id=ago style="width:100%">Login karein</button></div></div><div id=toast></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}),dmy=d=>d?d.split('-').reverse().join('/'):'';
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6),today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+/* Owner: Apps Script ka /exec link yahan ek dafa paste karein (README dekhein). Khali = sirf test mode, data browser mein. */
+const API_URL='https://script.google.com/macros/s/AKfycbxc_l4UeUa8XnxrTZHbfbEFoPVRMei8CFAK3Zb138MbrU35Gwuiz3rIf8oqhMRtfvVC/exec';
+let S=JSON.parse(localStorage.ap_set||'null')||{api:'',key:'',seller:{name:'M/S AA SEA FOOD',addr:'PLOT NO: K.S 2509, STREET NO 3 SHAMSUDDIN AREA MUHAMMADI COLONY, MARIPUR ROAD KARACHI',ntn:'A049273-7'},rates:{SRB:15,PRA:15,GST:18}};
+let DB=[],cur,shown=[],A=JSON.parse(localStorage.ap_auth||'null')||{},amode='login';
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2500)}
+function lock(m){if(m.startsWith('LOGIN:'))return logout(m.slice(6));$('#lm').textContent=m;$('#lock').hidden=false}function lockOff(){$('#lock').hidden=true}
+async function call(a,d={}){
+ if(!API_URL){let L=JSON.parse(localStorage.ap_db||'[]');
+  if(a=='save'){const k=L.findIndex(x=>x.id==d.inv.id);k<0?L.push(d.inv):L[k]=d.inv}
+  if(a=='del')L=L.filter(x=>x.id!=d.id);
+  localStorage.ap_db=JSON.stringify(L);return{rows:L}}
+ const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:a,email:A.email,token:A.token,...d})}).then(r=>r.json());
+ if(r.error)throw Error(r.error);return r}
+async function guard(){try{if(API_URL)await call('ping');return true}catch(e){lock(e.message);return false}}
+/* ---- amount in words (Pakistani: Lakh / Crore) ---- */
+const O='One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen Sixteen Seventeen Eighteen Nineteen'.split(' '),T='Twenty Thirty Forty Fifty Sixty Seventy Eighty Ninety'.split(' ');
+function w2(n){return n<20?O[n-1]:T[(n/10|0)-2]+(n%10?' '+O[n%10-1]:'')}
+function w3(n){return(n>99?O[(n/100|0)-1]+' Hundred'+(n%100?' ':''):'')+(n%100?w2(n%100):'')}
+function words(n){n=Math.round(n);if(!n)return'Zero (PKR) Only';let s=[];
+ [[1e7,'Crore',w3],[1e5,'Lakh',w2],[1e3,'Thousand',w2]].forEach(([d,l,f])=>{const q=Math.floor(n/d);if(q){s.push(f(q)+' '+l);n%=d}});
+ if(n)s.push(w3(n));return s.join(' ')+' (PKR) Only'}
+/* ---- calculations ---- */
+const calc=i=>{let v=0,g=0;i.items.forEach(x=>{const e=+x.value||0;v+=e;g+=e*(+x.rate||0)/100});return{v,g,t:v+g}};
+const rateOf=i=>{const r=[...new Set(i.items.filter(x=>+x.value).map(x=>+x.rate))];return r.length==1?r[0]:''};
+function invHTML(i){const s=i.seller||S.seller,b=i.buyer,c=calc(i),r=rateOf(i),P=20,it=i.items,np=it.length>P?Math.ceil(it.length/P):1;let out='';
+ const row=x=>{x=x||{};const e=+x.value||0,g=e*(+x.rate||0)/100;return`<tr><td class=c>${esc(x.qty)}</td><td colspan=3 class=c>${esc(x.desc)}</td><td class=c>${e?fmt(e):''}</td><td class=c>${e?+x.rate+'%':''}</td><td class=n>${e?fmt(g):''}</td><td class=n>${e?fmt(e+g):''}</td></tr>`};
+ for(let p=0;p<np;p++){let h='';
+  if(np==1)for(let k=0;k<Math.max(9,it.length);k++)h+=row(it[k]);else it.slice(p*P,p*P+P).forEach(x=>h+=row(x));
+  const foot=p<np-1?'<tr><td colspan=8 class=c style="border:0;font-style:italic;height:30px">Continued on next page...</td></tr>':`<tr class=b><td></td><td colspan=3 class=c>TOTAL</td><td class=c>${fmt(c.v)}</td><td class=c>${r!==''?r+'%':''}</td><td class=n>${fmt(c.g)}</td><td class=n>${fmt(c.t)}</td></tr>
+<tr class=b><td colspan=3 class=c style="height:40px">AMOUNT IN WORDS</td><td colspan=5>${words(c.t)}</td></tr>
+<tr><td colspan=8 style="border:0;height:28px"></td></tr><tr><td colspan=8 style="border:0;font-weight:700">${esc(s.name)}</td></tr>
+<tr><td colspan=8 style="border:0;font-weight:700;height:40px">SIGNATURE_________________________</td></tr>`;
+  out+=`<div class=inv><table><colgroup>${[7,11,11,11,16,11,15,18].map(w=>`<col style="width:${w}%">`).join('')}</colgroup>
+<tr><td colspan=8 class=t>SALES TAX INVOICE</td></tr>
+<tr class=b><td colspan=8>INV NO: ${esc(i.no)}&emsp;&emsp;&emsp;&emsp;Date: ${dmy(i.date)}&emsp;&emsp;&emsp;&emsp;${esc(i.copy)}${np>1?`&emsp;&emsp;(Page ${p+1} of ${np})`:''}</td></tr>
+<tr class=b><td colspan=4>${esc(s.name)}</td><td colspan=4>BUYER NAME ${esc(b.name)}</td></tr>
+<tr class=b><td colspan=4 style="height:46px;vertical-align:top">${esc(s.addr)}</td><td colspan=4 style="vertical-align:top">${esc(b.addr)}</td></tr>
+<tr class=b><td colspan=4>NTN NO:&nbsp; ${esc(s.ntn)}</td><td colspan=4>NTN: ${esc(b.ntn)}</td></tr>
+<tr><td colspan=8></td></tr>
+<tr class="b c" style="height:46px"><td>Qty.</td><td colspan=3>Description of Goods/Service</td><td>Value of<br>Goods/Services</td><td>Rate of<br>Sales Tax</td><td>Amount of<br>Sales Tax</td><td>Total Column</td></tr>${h}${foot}</table></div>`}
+ return out}
+/* ---- form ---- */
+const nextNo=t=>String(Math.max(0,...DB.filter(x=>x.type==t).map(x=>parseInt(x.no)||0))+1).padStart(2,'0');
+function newInv(t='SRB'){cur={id:uid(),type:t,no:nextNo(t),date:today(),copy:'ORIGINAL/DUPLICATE',seller:{...S.seller},buyer:{name:'',addr:'',ntn:''},items:[{qty:1,desc:'',value:'',rate:S.rates[t]}]};fill()}
+function fill(){$('#seg').innerHTML=['SRB','PRA','GST'].map(t=>`<button data-t=${t} class="${cur.type==t?'on':''}">${t}<br><small>${S.rates[t]}% aam rate</small></button>`).join('');
+ $('#no').value=cur.no;$('#dt').value=cur.date;$('#cp').value=cur.copy;$('#bn').value=cur.buyer.name;$('#ba').value=cur.buyer.addr;$('#bt').value=cur.buyer.ntn;
+ $('#bl').innerHTML=[...new Set(DB.map(x=>x.buyer.name))].map(n=>`<option value="${esc(n)}">`).join('');rows();refresh()}
+function rows(){$('#its').innerHTML='<div class=ir style="color:var(--mu);font-size:11px;margin:0"><span>Miqdar</span><span>Tafseel</span><span>Raqam</span><span>Rate %</span><span></span></div>'+cur.items.map((x,k)=>`<div class=ir><input data-k=${k} data-f=qty value="${esc(x.qty)}" placeholder="1"><input data-k=${k} data-f=desc value="${esc(x.desc)}" placeholder="Maal / service ka naam"><input data-k=${k} data-f=value type=number step=any value="${x.value}" placeholder="0"><input data-k=${k} data-f=rate type=number step=any list=rl value="${x.rate}" placeholder="%" title="Tax rate %"><button class="btn d s" data-x=${k}>✕</button></div>`).join('')}
+function refresh(){const c=calc(cur);$('#pv').innerHTML=invHTML(cur);$('#tot').innerHTML=`Raqam <b>${fmt(c.v)}</b> + Tax <b>${fmt(c.g)}</b> = Kul <b>${fmt(c.t)}</b><br><small>${words(c.t)}</small>`}
+function read(){cur.no=$('#no').value;cur.date=$('#dt').value;cur.copy=$('#cp').value;cur.buyer={name:$('#bn').value,addr:$('#ba').value,ntn:$('#bt').value}}
+['no','dt','cp','bn','ba','bt'].forEach(id=>$('#'+id).addEventListener('input',()=>{
+ if(id=='bn'){const m=DB.find(x=>x.buyer.name==$('#bn').value);if(m&&!$('#ba').value&&!$('#bt').value){$('#ba').value=m.buyer.addr;$('#bt').value=m.buyer.ntn}}read();refresh()}));
+$('#its').addEventListener('input',e=>{const k=e.target.dataset.k;if(k!=null){cur.items[k][e.target.dataset.f]=e.target.value;refresh()}});
+$('#its').addEventListener('click',e=>{const k=e.target.dataset.x;if(k!=null){cur.items.splice(k,1);if(!cur.items.length)cur.items.push({qty:1,desc:'',value:'',rate:S.rates[cur.type]});rows();refresh()}});
+$('#add').onclick=()=>{cur.items.push({qty:1,desc:'',value:'',rate:S.rates[cur.type]});rows();$$('#its input[data-f=desc]').pop().focus()};
+$('#seg').onclick=e=>{const b=e.target.closest('button');if(!b)return;read();const o=cur.type,t=b.dataset.t;cur.items.forEach(x=>{if(+x.rate==S.rates[o])x.rate=S.rates[t]});
+ if(!DB.some(x=>x.id==cur.id))cur.no=nextNo(t);cur.type=t;fill()};
+$('#new').onclick=()=>newInv(cur.type);
+async function save(){read();if(!cur.buyer.name.trim()){toast('Pehle khareedar ka naam likhein');return false}
+ if(DB.some(x=>x.type==cur.type&&x.no==cur.no&&x.id!=cur.id)&&!confirm('Is qisam mein ye invoice number pehle se maujood hai. Phir bhi save karein?'))return false;
+ cur.items=cur.items.filter(x=>+x.value||x.desc);if(!cur.items.length)cur.items=[{qty:1,desc:'',value:'',rate:S.rates[cur.type]}];
+ cur.totals=calc(cur);cur.upd=new Date().toISOString();
+ try{await call('save',{inv:cur});const k=DB.findIndex(x=>x.id==cur.id);k<0?DB.push(JSON.parse(JSON.stringify(cur))):DB[k]=JSON.parse(JSON.stringify(cur));rows();refresh();toast('Invoice save ho gayi ✔');return true}catch(e){lock(e.message);return false}}
+$('#save').onclick=save;
+$('#xl1').onclick=async()=>{read();xlsx([cur])};$('#pr1').onclick=async()=>{read();print_([cur])};
+/* ---- export ---- */
+async function print_(l){if(!l.length)return toast('Koi invoice nahi mili');if(!await guard())return;$('#pa').innerHTML=l.map(invHTML).join('');setTimeout(()=>print(),150)}
+async function xlsx(list){if(!list.length)return toast('Koi invoice nahi mili');if(!await guard())return;
+ const NUM='_(* #,##0_);_(* \\(#,##0\\);_(* "-"??_);_(@_)',B={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}},wb=new ExcelJS.Workbook(),used={};
+ for(const i of list){let nm=(i.type+' '+i.no).replace(/[\\\/*?:\[\]]/g,'-').slice(0,31),n=1;while(used[nm])nm=nm.slice(0,28)+'-'+(++n);used[nm]=1;
+  const s=i.seller||S.seller,b=i.buyer,c=calc(i),r=rateOf(i),
+  ws=wb.addWorksheet(nm,{views:[{showGridLines:false}],pageSetup:{paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:i.items.length>9?0:1,printTitlesRow:'1:8',horizontalCentered:true,margins:{left:.5,right:.5,top:.6,bottom:.6,header:.3,footer:.3}}});
+  ws.columns=[8,11,11,12,15,10,14,16].map(width=>({width}));
+  const box=(r1,c1,r2,c2,v,o={})=>{if(r1!=r2||c1!=c2)ws.mergeCells(r1,c1,r2,c2);for(let r=r1;r<=r2;r++)for(let q=c1;q<=c2;q++)ws.getCell(r,q).border=B;
+   const x=ws.getCell(r1,c1);x.value=v;x.font={name:o.font||'Calibri',size:o.sz||11,bold:!!o.b};x.alignment={horizontal:o.h,vertical:o.v||'middle',wrapText:true};if(o.f)x.numFmt=o.f};
+  box(1,1,1,8,'SALES TAX INVOICE',{b:1,sz:20,font:'Times New Roman',h:'center'});ws.getRow(1).height=26;
+  box(2,1,2,8,`INV NO: ${i.no}                 Date: ${dmy(i.date)}                 ${i.copy}`,{b:1});
+  box(3,1,3,4,s.name,{b:1});box(3,5,3,8,'BUYER NAME '+b.name,{b:1});
+  box(4,1,5,4,s.addr,{b:1,v:'top'});box(4,5,5,8,b.addr,{b:1,v:'top'});ws.getRow(4).height=24;ws.getRow(5).height=24;
+  box(6,1,6,4,'NTN NO:  '+s.ntn,{b:1});box(6,5,6,8,'NTN: '+b.ntn,{b:1});box(7,1,7,8,'');
+  box(8,1,8,1,'Qty.',{b:1,h:'center'});box(8,2,8,4,'Description of Goods/Service',{b:1,h:'center'});
+  [['Value of\nGoods/Services',5],['Rate of\nSales Tax',6],['Amount of\nSales Tax',7],['Total Column',8]].forEach(([t,q])=>box(8,q,8,q,t,{b:1,h:'center'}));ws.getRow(8).height=45;
+  const NR=Math.max(9,i.items.length),LE=8+NR,TR=9+NR;for(let k=0;k<NR;k++){const x=i.items[k]||{},R=9+k,e=+x.value||0,g=e*(+x.rate||0)/100;
+   box(R,1,R,1,x.qty===undefined?'':(isNaN(+x.qty)||x.qty===''?x.qty:+x.qty),{h:'center'});box(R,2,R,4,x.desc||'',{h:'center'});
+   box(R,5,R,5,e||'',{f:NUM,h:'center'});box(R,6,R,6,e?(+x.rate)/100:'',{f:Number.isInteger(+x.rate)?'0%':'0.0%',h:'center'});
+   box(R,7,R,7,e?{formula:`E${R}*F${R}`,result:g}:'',{f:NUM});box(R,8,R,8,e?{formula:`E${R}+G${R}`,result:e+g}:'',{f:NUM})}
+  box(TR,1,TR,1,'');box(TR,2,TR,4,'TOTAL',{b:1,h:'center'});box(TR,5,TR,5,{formula:`SUM(E9:E${LE})`,result:c.v},{b:1,f:NUM,h:'center'});
+  box(TR,6,TR,6,r===''?'':r/100,{b:1,f:Number.isInteger(r)?'0%':'0.0%',h:'center'});box(TR,7,TR,7,{formula:`SUM(G9:G${LE})`,result:c.g},{b:1,f:NUM});box(TR,8,TR,8,{formula:`SUM(H9:H${LE})`,result:c.t},{b:1,f:NUM});
+  box(TR+1,1,TR+2,3,'AMOUNT IN WORDS',{b:1,h:'center'});box(TR+1,4,TR+2,8,words(c.t),{b:1});
+  const SN=ws.getCell(TR+4,1),SG=ws.getCell(TR+5,1);SN.value=s.name;SN.font={bold:true,name:'Calibri'};SG.value='SIGNATURE_________________________';SG.font={bold:true,name:'Calibri'}}
+ const buf=await wb.xlsx.writeBuffer(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf]));
+ a.download=list.length==1?`Invoice_${list[0].type}_${list[0].no}.xlsx`:`Invoices_${today()}.xlsx`;a.click()}
+/* ---- records ---- */
+function filt(){const q=$('#fq').value.toLowerCase(),t=$('#ft').value,m=$('#fm').value,y=$('#fy').value,a=$('#fa').value,b=$('#fb').value;
+ return DB.filter(i=>(!t||i.type==t)&&(!q||(i.buyer.name+' '+i.no+' '+i.buyer.ntn).toLowerCase().includes(q))&&(!m||i.date.startsWith(m))&&(!y||i.date.startsWith(y))&&(!a||i.date>=a)&&(!b||i.date<=b)).sort((x,z)=>z.date.localeCompare(x.date)||z.no.localeCompare(x.no))}
+function recList(){shown=filt();let v=0,g=0,t=0;
+ $('#rb').innerHTML=shown.map(i=>{const c=calc(i);v+=c.v;g+=c.g;t+=c.t;return`<tr><td><input type=checkbox class=ck data-id=${i.id}><td><span class=tag>${i.type}</span><td>${esc(i.no)}<td>${dmy(i.date)}<td>${esc(i.buyer.name)}<td>${fmt(c.v)}<td>${fmt(c.g)}<td><b>${fmt(c.t)}</b><td><button class="btn g s" data-a=edit data-id=${i.id}>Badlein</button> <button class="btn g s" data-a=dup data-id=${i.id}>Copy</button> <button class="btn d s" data-a=del data-id=${i.id}>Hatayen</button></tr>`}).join('')||'<tr><td colspan=9>Koi record nahi mila</td></tr>';
+ $('#sum').innerHTML=`<b>${shown.length}</b> invoices &nbsp;|&nbsp; Raqam ${fmt(v)} &nbsp;|&nbsp; Tax ${fmt(g)} &nbsp;|&nbsp; Kul <b>${fmt(t)}</b>`}
+const sel=()=>{const ids=$$('.ck:checked').map(x=>x.dataset.id);return ids.length?shown.filter(i=>ids.includes(i.id)):shown};
+['fq','ft','fm','fy','fa','fb'].forEach(id=>$('#'+id).addEventListener('input',recList));
+$('#fx').onclick=()=>{['fq','ft','fm','fy','fa','fb'].forEach(id=>$('#'+id).value='');recList()};
+$('#ca').onchange=e=>$$('.ck').forEach(c=>c.checked=e.target.checked);
+$('#xl2').onclick=()=>xlsx(sel());$('#pr2').onclick=()=>print_(sel());
+$('#rb').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const i=DB.find(x=>x.id==b.dataset.id),a=b.dataset.a;
+ if(a=='edit'){cur=JSON.parse(JSON.stringify(i));show('new');fill()}
+ if(a=='dup'){cur=JSON.parse(JSON.stringify(i));cur.id=uid();cur.no=nextNo(cur.type);cur.date=today();show('new');fill();toast('Copy ban gayi hai, save karna na bhulein')}
+ if(a=='del'&&confirm(`Invoice ${i.type} ${i.no} hata dein? Ye wapas nahi aayegi.`)){try{await call('del',{id:i.id});DB=DB.filter(x=>x.id!=i.id);recList()}catch(err){lock(err.message)}}};
+/* ---- settings / nav ---- */
+function show(v){$$('section').forEach(s=>s.hidden=s.id!='v-'+v);$$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));if(v=='rec')recList();if(v=='set')setFill()}
+$$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function setFill(){$('#sn').value=S.seller.name;$('#sa').value=S.seller.addr;$('#st').value=S.seller.ntn;$('#rS').value=S.rates.SRB;$('#rP').value=S.rates.PRA;$('#rG').value=S.rates.GST;$('#who').textContent=(A.name||'')+(A.email?' ('+A.email+')':'');$('#lic').hidden=!API_URL}
+$('#ss').onclick=async()=>{S={seller:{name:$('#sn').value,addr:$('#sa').value,ntn:$('#st').value},rates:{SRB:+$('#rS').value,PRA:+$('#rP').value,GST:+$('#rG').value}};
+ try{if(API_URL)await call('saveset',{set:S})}catch(e){return lock(e.message)}
+ localStorage.ap_set=JSON.stringify(S);await load();newInv();toast('Settings save ho gayin ✔')};
+async function load(){try{const r=await call('list');DB=r.rows;
+ if(API_URL){S.seller=r.set?.seller||{name:'',addr:'',ntn:''};S.rates=r.set?.rates||{SRB:15,PRA:15,GST:18};localStorage.ap_set=JSON.stringify(S)}
+ lockOff();if(API_URL&&!S.seller.name){show('set');toast('Pehle apne karobar ki details bharein')}}catch(e){DB=[];lock(e.message)}}
+function setTh(t){document.documentElement.dataset.theme=t;localStorage.ap_th=t;$('#th').textContent=t=='dark'?'☀️':'🌙'}
+$('#th').onclick=()=>setTh(document.documentElement.dataset.theme=='dark'?'light':'dark');
+setTh(localStorage.ap_th||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+function showAuth(m){$('#auth').hidden=false;$('#am').style.color='';$('#am').textContent=m||''}
+function logout(m){A={};localStorage.removeItem('ap_auth');DB=[];lockOff();showAuth(m)}
+$('#lo').onclick=()=>logout();
+$('#aseg').onclick=e=>{const b=e.target.closest('button');if(!b)return;amode=b.dataset.m;$$('#aseg button').forEach(x=>x.classList.toggle('on',x==b));$('#anw').hidden=amode!='signup';$('#ago').textContent=amode=='login'?'Login karein':'Account banayein';$('#am').textContent=''};
+$('#ap').addEventListener('keydown',e=>{if(e.key=='Enter')$('#ago').click()});
+$('#ago').onclick=async()=>{const m=$('#am');m.style.color='';m.textContent='Intezar karein...';
+ try{const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:amode,email:$('#ae').value.trim(),pass:$('#ap').value,name:$('#an').value.trim()})}).then(r=>r.json());
+  if(r.error)throw Error(r.error);
+  if(amode=='signup'){m.style.color='#2e9e6b';m.textContent=r.msg;return}
+  A={email:r.email,name:r.name,token:r.token};localStorage.ap_auth=JSON.stringify(A);$('#auth').hidden=true;$('#ap').value='';await load();newInv()
+ }catch(e){m.style.color='#e5594b';m.textContent=e.message}};
+(async()=>{if(API_URL&&!A.token){showAuth();return}await load();newInv()})();
+</script></body></html>
